@@ -172,6 +172,37 @@ app.get('/users/:id/comments', (req, res) => {
   res.json(userComments);
 });
 
+// Search routes
+app.get('/api/search/users', (req, res) => {
+  const { query } = req.query;
+  const result = users.filter(user =>
+    Object.values(user).some(value =>
+      value.toString().toLowerCase().includes(query.toLowerCase())
+    )
+  );
+  res.json(result);
+});
+
+app.get('/api/search/posts', (req, res) => {
+  const { query } = req.query;
+  const result = posts.filter(post =>
+    Object.values(post).some(value =>
+      value.toString().toLowerCase().includes(query.toLowerCase())
+    )
+  );
+  res.json(result);
+});
+
+app.get('/api/search/comments', (req, res) => {
+  const { query } = req.query;
+  const result = comments.filter(comment =>
+    Object.values(comment).some(value =>
+      value.toString().toLowerCase().includes(query.toLowerCase())
+    )
+  );
+  res.json(result);
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
