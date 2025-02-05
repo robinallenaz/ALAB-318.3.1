@@ -41,3 +41,8 @@ The server will start on http://localhost:3000
 - `DELETE /comments/:id` - Delete a comment
 - `GET /posts/:id/comments` - Get all comments on a post (can filter by userId)
 - `GET /users/:id/comments` - Get all comments by a user (can filter by postId)
+
+### Search
+- `GET /api/search/users?query=<search_term>` - Search users by any field matching the search term.
+- `GET /api/search/posts?query=<search_term>` - Search posts by any field matching the search term.
+- `GET /api/search/comments?query=<search_term>` - Search comments by any field matching the search term.
