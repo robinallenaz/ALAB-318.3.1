@@ -1,3 +1,5 @@
+import './public/output.css';
+
 const express = require('express');
 const cors = require('cors');
 
