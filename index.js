@@ -2,13 +2,36 @@ import './public/output.css';
 
 const express = require('express');
 const cors = require('cors');
+const passport = require('passport');
+const session = require('express-session');
+const initializePassport = require('./passport-config');
 
 const app = express();
 const port = 3000;
 
+// Dummy user data
+const users = [];
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Initialize Passport
+initializePassport(
+  passport,
+  email => users.find(user => user.email === email),
+  id => users.find(user => user.id === id)
+);
+
+app.use(session({
+  secret: 'your_secret_key',
+  resave: false,
+  saveUninitialized: false
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -21,199 +44,30 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Data storage
-const users = [];
-const posts = [];
-const comments = [];
+// Authentication Routes
+app.post('/login', passport.authenticate('local', {
+  successRedirect: '/',
+  failureRedirect: '/login',
+  failureFlash: true
+}));
 
-// Helper function to find by ID
-const findById = (arr, id) => arr.find(item => item.id === parseInt(id));
+app.post('/register', async (req, res) => {
+  try {
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+    users.push({
+      id: Date.now().toString(),
+      email: req.body.email,
+      password: hashedPassword
+    });
+    res.redirect('/login');
+  } catch {
+    res.redirect('/register');
+  }
+});
 
 // Root routes
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the API' });
-});
-
-app.get('/api', (req, res) => {
-  res.json({ message: 'API is running' });
-});
-
-// User routes
-app.get('/api/users', (req, res) => {
-  res.json(users);
-});
-
-app.post('/api/users', (req, res) => {
-  const newUser = {
-    id: users.length + 1,
-    ...req.body
-  };
-  users.push(newUser);
-  res.status(201).json(newUser);
-});
-
-app.get('/api/users/:id', (req, res) => {
-  const user = findById(users, req.params.id);
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  res.json(user);
-});
-
-app.patch('/api/users/:id', (req, res) => {
-  const user = findById(users, req.params.id);
-  if (!user) return res.status(404).json({ message: 'User not found' });
-  Object.assign(user, req.body);
-  res.json(user);
-});
-
-app.delete('/api/users/:id', (req, res) => {
-  const index = users.findIndex(user => user.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ message: 'User not found' });
-  users.splice(index, 1);
-  res.status(204).send();
-});
-
-// Post routes
-app.get('/api/posts', (req, res) => {
-  const { userId } = req.query;
-  if (userId) {
-    const userPosts = posts.filter(post => post.userId === parseInt(userId));
-    return res.json(userPosts);
-  }
-  res.json(posts);
-});
-
-app.post('/api/posts', (req, res) => {
-  const newPost = {
-    id: posts.length + 1,
-    ...req.body
-  };
-  posts.push(newPost);
-  res.status(201).json(newPost);
-});
-
-app.get('/api/posts/:id', (req, res) => {
-  const post = findById(posts, req.params.id);
-  if (!post) return res.status(404).json({ message: 'Post not found' });
-  res.json(post);
-});
-
-app.patch('/api/posts/:id', (req, res) => {
-  const post = findById(posts, req.params.id);
-  if (!post) return res.status(404).json({ message: 'Post not found' });
-  Object.assign(post, req.body);
-  res.json(post);
-});
-
-app.delete('/api/posts/:id', (req, res) => {
-  const index = posts.findIndex(post => post.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ message: 'Post not found' });
-  posts.splice(index, 1);
-  res.status(204).send();
-});
-
-// User posts routes
-app.get('/api/users/:id/posts', (req, res) => {
-  const userPosts = posts.filter(post => post.userId === parseInt(req.params.id));
-  res.json(userPosts);
-});
-
-// Comment routes
-app.get('/comments', (req, res) => {
-  const { userId, postId } = req.query;
-  let filteredComments = [...comments];
-  
-  if (userId) {
-    filteredComments = filteredComments.filter(comment => comment.userId === parseInt(userId));
-  }
-  if (postId) {
-    filteredComments = filteredComments.filter(comment => comment.postId === parseInt(postId));
-  }
-  
-  res.json(filteredComments);
-});
-
-app.post('/comments', (req, res) => {
-  const newComment = {
-    id: comments.length + 1,
-    ...req.body
-  };
-  comments.push(newComment);
-  res.status(201).json(newComment);
-});
-
-app.get('/comments/:id', (req, res) => {
-  const comment = findById(comments, req.params.id);
-  if (!comment) return res.status(404).json({ message: 'Comment not found' });
-  res.json(comment);
-});
-
-app.patch('/comments/:id', (req, res) => {
-  const comment = findById(comments, req.params.id);
-  if (!comment) return res.status(404).json({ message: 'Comment not found' });
-  if (req.body.body) comment.body = req.body.body;
-  res.json(comment);
-});
-
-app.delete('/comments/:id', (req, res) => {
-  const index = comments.findIndex(comment => comment.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ message: 'Comment not found' });
-  comments.splice(index, 1);
-  res.status(204).send();
-});
-
-// Post comments routes
-app.get('/posts/:id/comments', (req, res) => {
-  const { userId } = req.query;
-  let postComments = comments.filter(comment => comment.postId === parseInt(req.params.id));
-  
-  if (userId) {
-    postComments = postComments.filter(comment => comment.userId === parseInt(userId));
-  }
-  
-  res.json(postComments);
-});
-
-// User comments routes
-app.get('/users/:id/comments', (req, res) => {
-  const { postId } = req.query;
-  let userComments = comments.filter(comment => comment.userId === parseInt(req.params.id));
-  
-  if (postId) {
-    userComments = userComments.filter(comment => comment.postId === parseInt(postId));
-  }
-  
-  res.json(userComments);
-});
-
-// Search routes
-app.get('/api/search/users', (req, res) => {
-  const { query } = req.query;
-  const result = users.filter(user =>
-    Object.values(user).some(value =>
-      value.toString().toLowerCase().includes(query.toLowerCase())
-    )
-  );
-  res.json(result);
-});
-
-app.get('/api/search/posts', (req, res) => {
-  const { query } = req.query;
-  const result = posts.filter(post =>
-    Object.values(post).some(value =>
-      value.toString().toLowerCase().includes(query.toLowerCase())
-    )
-  );
-  res.json(result);
-});
-
-app.get('/api/search/comments', (req, res) => {
-  const { query } = req.query;
-  const result = comments.filter(comment =>
-    Object.values(comment).some(value =>
-      value.toString().toLowerCase().includes(query.toLowerCase())
-    )
-  );
-  res.json(result);
 });
 
 app.listen(port, () => {
