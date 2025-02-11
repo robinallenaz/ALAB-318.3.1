@@ -5,6 +5,7 @@ const cors = require('cors');
 const passport = require('passport');
 const session = require('express-session');
 const initializePassport = require('./passport-config');
+const bcrypt = require('bcrypt');
 
 const app = express();
 const port = 3000;
@@ -16,6 +17,7 @@ const users = [];
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static('public'));
 
 // Initialize Passport
 initializePassport(
@@ -67,7 +69,27 @@ app.post('/register', async (req, res) => {
 
 // Root routes
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the API' });
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <link href="/output.css" rel="stylesheet">
+      <title>Welcome</title>
+    </head>
+    <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+      <div class="text-center">
+        <h1 class="text-3xl font-bold animate-fade-in">Welcome to the App</h1>
+        <form action="/login" method="post" class="mt-6 animate-slide-up">
+          <input type="email" name="email" placeholder="Email" class="block mb-2 p-2 border border-gray-300 rounded">
+          <input type="password" name="password" placeholder="Password" class="block mb-4 p-2 border border-gray-300 rounded">
+          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Login</button>
+        </form>
+      </div>
+    </body>
+    </html>
+  `);
 });
 
 app.listen(port, () => {
