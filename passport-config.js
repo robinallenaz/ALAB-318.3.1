@@ -5,6 +5,7 @@ function initialize(passport, getUserByEmail, getUserById) {
   const authenticateUser = async (email, password, done) => {
     const user = getUserByEmail(email);
     if (user == null) {
+      console.error('Authentication error: No user with that email');
       return done(null, false, { message: 'No user with that email' });
     }
 
@@ -12,9 +13,11 @@ function initialize(passport, getUserByEmail, getUserById) {
       if (await bcrypt.compare(password, user.password)) {
         return done(null, user);
       } else {
+        console.error('Authentication error: Incorrect password');
         return done(null, false, { message: 'Password incorrect' });
       }
     } catch (e) {
+      console.error('Authentication error:', e);
       return done(e);
     }
   };

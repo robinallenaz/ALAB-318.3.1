@@ -37,12 +37,12 @@ app.use(passport.session());
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err.stack);
   res.status(err.status || 500).json({
     error: {
       message: err.message || 'Internal Server Error',
-      status: err.status || 500
-    }
+      status: err.status || 500,
+    },
   });
 });
 
@@ -90,6 +90,16 @@ app.get('/', (req, res) => {
     </body>
     </html>
   `);
+});
+
+// Catch-all route for undefined endpoints
+app.use((req, res) => {
+  res.status(404).json({
+    error: {
+      message: 'Endpoint not found',
+      status: 404,
+    },
+  });
 });
 
 app.listen(port, () => {
